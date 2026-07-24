@@ -58,24 +58,31 @@ contract Pool is ERC20, Ownable {
 
   function addLiquidity(uint256 _tokenIndex, uint256 _amount, uint256 _minIn) external returns (uint256 mintedLPTokens) {
     // Les trois tokens WBTC, LBTC et cbBTC ont comme transferFrom true ou revert, et ne sont pas des tokens à frais de transfert : pas besoin de vérifier balanceOf
+    uint256[3] memory amounts;
+
     if (totalSupply() == 0) {
-      for (uint256 i; i < 3; i++) {
-      IERC20(indexToAddress(i)).transferFrom(msg.sender, address(this), _amount);
-      }
       mintedLPTokens = 3 * _amount - MINIMUM_LIQUIDITY;
+      require(mintedLPTokens >= _minIn, "bad slippage");
+
       _mint(0x000000000000000000000000000000000000dEaD, MINIMUM_LIQUIDITY);
+      amounts[0] = amounts[1] = amounts[2] = _amount;
       reserves[0] = reserves[1] = reserves[2] = _amount;
+
     } else {
+
       uint256 reserve = reserves[_tokenIndex];
       mintedLPTokens = totalSupply() * _amount / reserve;
+      require(mintedLPTokens >= _minIn, "bad slippage");
+
       for (uint256 i; i < 3; i++) {
-        uint256 amount_i = _amount * reserves[i] / reserve;
-        IERC20(indexToAddress(i)).transferFrom(msg.sender, address(this), amount_i);
-        reserves[i] += amount_i;
+        amounts[i] = _amount * reserves[i] / reserve;
+        reserves[i] += amounts[i];
       }
     }
-    require(mintedLPTokens >= _minIn, "bad slippage");
     _mint(msg.sender, mintedLPTokens);
+    for (uint256 i; i < 3; i++) {
+      IERC20(indexToAddress(i)).transferFrom(msg.sender, address(this), amounts[i]);
+    }
   }
 
   function removeLiquidity(uint256 _toBurnLPTokens, uint256[3] calldata _minOut) external returns (uint256[3] memory tokensBack) {
