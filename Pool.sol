@@ -13,24 +13,29 @@ contract Pool is ERC20, Ownable {
   address public immutable token1;
   address public immutable token2;
 
-  uint256[3] public reserves;
+  uint72[3] public reserves;
 
   uint256 public feeNum;
-  uint256 constant MAX_FEE_NUM = 10;
-  uint256 constant FEE_DEN = 1000;
+  uint256 constant public MAX_FEE_NUM = 10;
+  uint256 constant public FEE_DEN = 1000;
 
   uint256 public lastFeeUpdate;
-  uint256 constant MIN_SET_FEE_DELAY = 1 days;
+  uint256 constant public MIN_SET_FEE_DELAY = 1 days;
 
   uint256 constant MINIMUM_LIQUIDITY = 1000;
 
-  event FeesSet(uint256 lastFees, uint256 newFees);
-  event AddedLiquidity(address indexed lPAdress, uint256[3] amountsIn, uint256 mintedLPTokens);
-  event RemovedLiquidity(address indexed lPAddress, uint256[3] amountsOut, uint256 burntLPTokens);
-  event Swapped(address indexed swapperAdress, uint256 indexed indexIn, uint256 amountIn, uint256 indexed indexOut, uint256 amountOut);
+  error FeeTooHigh();
+  error FeeUpdateTooSoon();
+  error BadSlippage();
+  error ReserveOverflow();
 
-  constructor(address[3] memory _tokens, uint256 _feeNum, address _feesetter) ERC20("DowntownLP", "DLP") Ownable(_feesetter) {
-    require(_feeNum <= MAX_FEE_NUM, "too expansive fees");
+  event FeeSet(uint256 oldFee, uint256 newFee);
+  event AddedLiquidity(address indexed provider, uint256[3] amountsIn, uint256 mintedShares);
+  event RemovedLiquidity(address indexed provider, uint256[3] amountsOut, uint256 burnedShares);
+  event Swapped(address indexed swapper, uint256 indexed indexIn, uint256 amountIn, uint256 indexed indexOut, uint256 amountOut);
+
+  constructor(address[3] memory _tokens, uint256 _feeNum, address _feeSetter) ERC20("DowntownLP", "DLP") Ownable(_feeSetter) {
+    require(_feeNum <= MAX_FEE_NUM, FeeTooHigh());
     feeNum = _feeNum;
     lastFeeUpdate = block.timestamp;
 
@@ -39,20 +44,19 @@ contract Pool is ERC20, Ownable {
     token2 = _tokens[2];
   }
 
-  function decimals() public pure override returns(uint8) {
+  function decimals() public pure override returns (uint8) {
     return 8;
   }
 
-  function setFees(uint256 _feeNum) external onlyOwner {
-    require(_feeNum <= MAX_FEE_NUM, "too expansive fees");
-    require(block.timestamp - lastFeeUpdate >= MIN_SET_FEE_DELAY, "fees to be set later");
-    emit FeesSet(feeNum, _feeNum);
+  function setFee(uint256 _feeNum) external onlyOwner {
+    require(_feeNum <= MAX_FEE_NUM, FeeTooHigh());
+    require(block.timestamp - lastFeeUpdate >= MIN_SET_FEE_DELAY, FeeUpdateTooSoon());
+    emit FeeSet(feeNum, _feeNum);
     feeNum = _feeNum;
     lastFeeUpdate = block.timestamp;
   }
 
   function indexToAddress(uint256 _tokenIndex) internal view returns (address tokenAddress) {
-    require(_tokenIndex < 3, "bad index");
     if (_tokenIndex == 0) {
       tokenAddress = token0;
     }  else if (_tokenIndex == 1) {
@@ -62,62 +66,70 @@ contract Pool is ERC20, Ownable {
     }
   }
 
-  function addLiquidity(uint256 _tokenIndex, uint256 _amount, uint256 _minIn) external returns (uint256 mintedLPTokens) {
-    // Les trois tokens WBTC, LBTC et cbBTC ont comme transferFrom true ou revert, et ne sont pas des tokens à frais de transfert : pas besoin de vérifier balanceOf
+  function addLiquidity(uint256 _anchorIndex, uint256 _amount, uint256 _minShares) external returns (uint256 mintedShares) {
+    // WBTC, LBTC and cbBTC all return true or revert on transferFrom, and none of them is a fee-on-transfer token: no need to check balanceOf
     uint256[3] memory amounts;
+    uint256 supply = totalSupply();
 
-    if (totalSupply() == 0) {
-      mintedLPTokens = 3 * _amount - MINIMUM_LIQUIDITY;
-      require(mintedLPTokens >= _minIn, "bad slippage");
+    if (supply == 0) {
+      mintedShares = 3 * _amount - MINIMUM_LIQUIDITY;
+      require(mintedShares >= _minShares, BadSlippage());
+      require(_amount <= type(uint72).max, ReserveOverflow());
 
       _mint(0x000000000000000000000000000000000000dEaD, MINIMUM_LIQUIDITY);
       amounts[0] = amounts[1] = amounts[2] = _amount;
-      reserves[0] = reserves[1] = reserves[2] = _amount;
+      reserves[0] = reserves[1] = reserves[2] = uint72(_amount);
 
     } else {
+      uint72[3] memory cachedReserves = reserves;
 
-      uint256 reserve = reserves[_tokenIndex];
-      mintedLPTokens = totalSupply() * _amount / reserve;
-      require(mintedLPTokens >= _minIn, "bad slippage");
+      mintedShares = supply * _amount / cachedReserves[_anchorIndex];
+      require(mintedShares >= _minShares, BadSlippage());
 
       for (uint256 i; i < 3; i++) {
-        amounts[i] = _amount * reserves[i] / reserve;
-        reserves[i] += amounts[i];
+        amounts[i] = _amount * cachedReserves[i] / cachedReserves[_anchorIndex];
+        require(reserves[i] + amounts[i] <= type(uint72).max, ReserveOverflow());
+        reserves[i] += uint72(amounts[i]);
       }
     }
-    _mint(msg.sender, mintedLPTokens);
+    _mint(msg.sender, mintedShares);
     for (uint256 i; i < 3; i++) {
       IERC20(indexToAddress(i)).transferFrom(msg.sender, address(this), amounts[i]);
     }
-    emit AddedLiquidity(msg.sender, amounts, mintedLPTokens);
+    emit AddedLiquidity(msg.sender, amounts, mintedShares);
   }
 
-  function removeLiquidity(uint256 _toBurnLPTokens, uint256[3] calldata _minOut) external returns (uint256[3] memory tokensBack) {
+  function removeLiquidity(uint256 _burnedShares, uint256[3] calldata _minOut) external returns (uint256[3] memory amountsOut) {
     uint256 supply = totalSupply();
+    uint72[3] memory cachedReserves = reserves;
+
     for (uint256 i; i < 3; i++) {
-      tokensBack[i] = reserves[i] * _toBurnLPTokens / supply;
-      require(tokensBack[i] >= _minOut[i], "bad slippage");
-      reserves[i] -= tokensBack[i];
+      amountsOut[i] = cachedReserves[i] * _burnedShares / supply;
+      require(amountsOut[i] >= _minOut[i], BadSlippage());
+      reserves[i] -= uint72(amountsOut[i]);
     }
-    _burn(msg.sender, _toBurnLPTokens);
+    _burn(msg.sender, _burnedShares);
     for (uint256 i; i < 3; i++) {
-      IERC20(indexToAddress(i)).transfer(msg.sender, tokensBack[i]);
+      IERC20(indexToAddress(i)).transfer(msg.sender, amountsOut[i]);
     }
-    emit RemovedLiquidity(msg.sender, tokensBack, _toBurnLPTokens);
+    emit RemovedLiquidity(msg.sender, amountsOut, _burnedShares);
   }
 
-  function swap(uint256 _indexSold, uint256 _amount, uint256 _indexBought, uint256 _minOut) external returns (uint256 tokensBought) {
-    uint256 amountAfterFees = _amount * (FEE_DEN - feeNum) / FEE_DEN;
-    tokensBought = amountAfterFees * reserves[_indexBought] / (amountAfterFees + reserves[_indexSold]);
-    require(tokensBought >= _minOut, "bad slippage");
+  function swap(uint256 _indexIn, uint256 _amount, uint256 _indexOut, uint256 _minOut) external returns (uint256 amountOut) {
+    uint72[3] memory cachedReserves = reserves;
 
-    reserves[_indexSold] += _amount;
-    reserves[_indexBought] -= tokensBought;
+    uint256 amountAfterFee = _amount * (FEE_DEN - feeNum) / FEE_DEN;
+    amountOut = amountAfterFee * cachedReserves[_indexOut] / (amountAfterFee + cachedReserves[_indexIn]);
+    require(amountOut >= _minOut, BadSlippage());
 
-    IERC20(indexToAddress(_indexSold)).transferFrom(msg.sender, address(this), _amount);
-    IERC20(indexToAddress(_indexBought)).transfer(msg.sender, tokensBought);
+    require(_amount + cachedReserves[_indexIn] <= type(uint72).max, ReserveOverflow());
+    reserves[_indexIn] += uint72(_amount);
+    reserves[_indexOut] -= uint72(amountOut);
 
-    emit Swapped(msg.sender, _indexSold, _amount, _indexBought, tokensBought);
+    IERC20(indexToAddress(_indexIn)).transferFrom(msg.sender, address(this), _amount);
+    IERC20(indexToAddress(_indexOut)).transfer(msg.sender, amountOut);
+
+    emit Swapped(msg.sender, _indexIn, _amount, _indexOut, amountOut);
   }
 
 }
