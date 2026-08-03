@@ -24,10 +24,10 @@ contract Pool is ERC20, Ownable {
 
   uint256 constant MINIMUM_LIQUIDITY = 1000;
 
-  event FeesSet(uint256 LastFees, uint256 NewFees);
-  event AddedLiquidity(address LPAdress, uint256[3] AmountsIn, uint256 MintedLPTokens);
-  event RemovedLiquidity(address LPAdress, uint256[3] AmountsOut, uint256 BurntLPTokens);
-  event Swapped(address SwaperAdress, uint256 AmountIn, uint256 AmountOut);
+  event FeesSet(uint256 lastFees, uint256 newFees);
+  event AddedLiquidity(address indexed lPAdress, uint256[3] amountsIn, uint256 mintedLPTokens);
+  event RemovedLiquidity(address indexed lPAddress, uint256[3] amountsOut, uint256 burntLPTokens);
+  event Swapped(address indexed swapperAdress, uint256 indexed indexIn, uint256 amountIn, uint256 indexed indexOut, uint256 amountOut);
 
   constructor(address[3] memory _tokens, uint256 _feeNum, address _feesetter) ERC20("DowntownLP", "DLP") Ownable(_feesetter) {
     require(_feeNum <= MAX_FEE_NUM, "too expansive fees");
@@ -94,7 +94,6 @@ contract Pool is ERC20, Ownable {
 
   function removeLiquidity(uint256 _toBurnLPTokens, uint256[3] calldata _minOut) external returns (uint256[3] memory tokensBack) {
     uint256 supply = totalSupply();
-    uint256[3] memory tokensBack;
     for (uint256 i; i < 3; i++) {
       tokensBack[i] = reserves[i] * _toBurnLPTokens / supply;
       require(tokensBack[i] >= _minOut[i], "bad slippage");
@@ -118,7 +117,7 @@ contract Pool is ERC20, Ownable {
     IERC20(indexToAddress(_indexSold)).transferFrom(msg.sender, address(this), _amount);
     IERC20(indexToAddress(_indexBought)).transfer(msg.sender, tokensBought);
 
-    emit Swapped(msg.sender, _amount, tokensBought);
+    emit Swapped(msg.sender, _indexSold, _amount, _indexBought, tokensBought);
   }
 
 }
