@@ -1,0 +1,76 @@
+{
+  "contracts": {
+    "contracts/MockWrappedBTC.sol:MockWrappedBTC": {
+      "sourceName": "contracts/MockWrappedBTC.sol",
+      "contractName": "MockWrappedBTC",
+      "proxyChain": [],
+      "deployment": {
+        "min": 513203,
+        "max": 513227,
+        "avg": 513211,
+        "median": 513203,
+        "count": 3,
+        "runtimeSize": 1862
+      },
+      "functions": {
+        "approve": {
+          "min": 46342,
+          "max": 46342,
+          "avg": 46342,
+          "median": 46342,
+          "count": 3
+        },
+        "mint": {
+          "min": 68391,
+          "max": 68391,
+          "avg": 68391,
+          "median": 68391,
+          "count": 3
+        }
+      }
+    },
+    "contracts/Pool.sol:Pool": {
+      "sourceName": "contracts/Pool.sol",
+      "contractName": "Pool",
+      "proxyChain": [],
+      "deployment": {
+        "min": 1507063,
+        "max": 1507063,
+        "avg": 1507063,
+        "median": 1507063,
+        "count": 1,
+        "runtimeSize": 6131
+      },
+      "functions": {
+        "addLiquidity": {
+          "min": 112687,
+          "max": 234702,
+          "avg": 204198,
+          "median": 234702,
+          "count": 4
+        },
+        "balanceOf": {
+          "min": 2670,
+          "max": 2670,
+          "avg": 2670,
+          "median": 2670,
+          "count": 1
+        },
+        "removeLiquidity": {
+          "min": 94764,
+          "max": 94764,
+          "avg": 94764,
+          "median": 94764,
+          "count": 1
+        },
+        "swap": {
+          "min": 72007,
+          "max": 72007,
+          "avg": 72007,
+          "median": 72007,
+          "count": 1
+        }
+      }
+    }
+  }
+}
