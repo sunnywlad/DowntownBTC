@@ -1,0 +1,32 @@
+'use client'
+
+import { WagmiProvider } from 'wagmi'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createAppKit } from '@reown/appkit/react'
+import { wagmiAdapter, networks, projectId } from '@/config'
+import { hardhat } from '@reown/appkit/networks'
+
+const queryClient = new QueryClient()
+
+createAppKit({
+  adapters: [wagmiAdapter],
+  networks,
+  projectId,
+  metadata: {
+    name: 'Merion',
+    description: 'DeFi for wrapped BTC',
+    url: 'http://localhost:3000',
+    icons: [''],
+  },
+  defaultNetwork: hardhat
+})
+
+export default function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <WagmiProvider config={wagmiAdapter.wagmiConfig}>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    </WagmiProvider>
+  )
+}
