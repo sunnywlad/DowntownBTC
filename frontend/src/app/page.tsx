@@ -1,9 +1,11 @@
-
+import Connection from '@/components/Connection';
 
 export default function Home() {
   return (
     <>
-    <h1>Welcome to Merion</h1>
+    <Connection>
+      <p>Welcome to Merion</p>
+    </Connection>
     </>
   );
 }
