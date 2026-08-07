@@ -3,6 +3,9 @@
 import {useReadContracts} from 'wagmi';
 import {addresses} from '@/constants/addresses';
 import {poolAbi} from '@/constants/abi';
+import {formatUnits} from 'viem';
+
+const labels = ["wBTC", "cbBTC", "LBTC"] as const;
 
 export default function Reserves() {
   const { data, isLoading, error } = useReadContracts({
@@ -36,12 +39,15 @@ export default function Reserves() {
     )
   }
   return (
-    <div>
-      <ul>
-        <li>Reserves de wBTC {data?.[0].result}</li>
-        <li>Reserves de cbBTC {data?.[1].result}</li>
-        <li>Reserves de LBTC {data?.[2].result}</li>
-      </ul>
-    </div>
+    <ul>
+      { labels.map((label, i) => {
+        const dati = data?.[i];
+        return(
+          <li key={label}>
+            Réserves de {label} : {
+              dati?.status==="success" ? formatUnits(dati.result, 8) : dati?.status ?? "-"
+              }
+          </li>)}) }
+    </ul>
   )
 }

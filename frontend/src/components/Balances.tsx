@@ -3,6 +3,9 @@
 import {useReadContracts, useConnection} from 'wagmi';
 import {addresses} from '@/constants/addresses';
 import {mockWrappedBTCAbi} from '@/constants/abi';
+import {formatUnits} from 'viem';
+
+const labels = ["wBTC", "cbBTC", "LBTC"] as const;
 
 export default function Balances() {
   const userAddress = useConnection().address;
@@ -38,13 +41,17 @@ export default function Balances() {
       <>Error : {error.message}</>
     )
   }
+
   return (
-    <div>
-      <ul>
-        <li>Votre montant de wBTC {data?.[0].result}</li>
-        <li>Votre montant de cbBTC {data?.[1].result}</li>
-        <li>Votre montant de LBTC {data?.[2].result}</li>
-      </ul>
-    </div>
+    <ul>
+      { labels.map((label, i) => {
+        const dati = data?.[i];
+        return(
+          <li key={label}>
+            Votre montant de {label} : {
+              dati?.status==="success" ? formatUnits(dati.result, 8) : dati?.status ?? "-"
+              }
+          </li>)}) }
+    </ul>
   )
 }
