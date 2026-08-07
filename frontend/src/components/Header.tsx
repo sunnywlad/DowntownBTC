@@ -2,7 +2,7 @@
 
 const Header = () => {
   return (
-    <header>
+    <header className="flex items-center justify-between p-4 border-b">
       Merion
       <appkit-button balance="hide" />
     </header>

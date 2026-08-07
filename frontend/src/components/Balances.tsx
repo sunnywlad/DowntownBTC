@@ -30,28 +30,26 @@ export default function Balances() {
     query: { enabled: Boolean(userAddress)}
   })
 
+  let content;
 
-  if (isLoading) {
-    return (
-      <p>Loading</p>
-    )
-  }
-  if (!isLoading && error) {
-    return (
-      <>Error : {error.message}</>
-    )
-  }
-
-  return (
+  if (isLoading) content = <p>Loading</p>;
+  else if (error) content = <p>Error : {error.message}</p>;
+  else content =
     <ul>
       { labels.map((label, i) => {
         const dati = data?.[i];
+        let value;
+        if (!dati) value = "No data";
+        else if (dati.status === "success") value = formatUnits(dati.result, 8);
+        else value = dati.error?.message ?? "échec";
         return(
           <li key={label}>
-            Votre montant de {label} : {
-              dati?.status==="success" ? formatUnits(dati.result, 8) : dati?.status ?? "-"
-              }
+            Votre montant de {label} : {value}
           </li>)}) }
-    </ul>
+    </ul>;
+  return (
+    <div className='border rounded p-4'>
+      {content}
+    </div>
   )
 }
