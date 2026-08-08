@@ -351,6 +351,19 @@ export const poolAbi = [
     },
     {
       "inputs": [],
+      "name": "MINIMUM_LIQUIDITY",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "MIN_SET_FEE_DELAY",
       "outputs": [
         {

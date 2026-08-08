@@ -22,7 +22,7 @@ contract Pool is ERC20, Ownable {
   uint256 public lastFeeUpdate;
   uint256 constant public MIN_SET_FEE_DELAY = 1 days;
 
-  uint256 constant MINIMUM_LIQUIDITY = 1000;
+  uint256 constant public MINIMUM_LIQUIDITY = 1000;
 
   error FeeTooHigh();
   error FeeUpdateTooSoon();

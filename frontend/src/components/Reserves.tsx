@@ -1,21 +1,11 @@
 'use client';
 
-import {useReadContracts} from 'wagmi';
-import {addresses, tokensInfo} from '@/constants/addresses';
-import {poolAbi} from '@/constants/abi';
+import {useReserves} from '@/hooks/useReserves';
 import {formatUnits} from 'viem';
+import { tokensInfo } from '@/constants/addresses';
 
 export default function Reserves() {
-  const { data, isLoading, error } = useReadContracts({
-    contracts: tokensInfo.map((token) => {
-      return {
-        address: addresses[31337].pool,
-        abi: poolAbi,
-        functionName: 'reserves',
-        args: [token.index]
-      } as const;
-    })
-  })
+  const { data, isLoading, error } = useReserves();
 
   let content;
 

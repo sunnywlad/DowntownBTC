@@ -2,6 +2,7 @@ import Connection from '@/components/Connection';
 import Reserves from '@/components/Reserves';
 import Balances from '@/components/Balances';
 import Faucet from '@/components/Faucet';
+import AddLiquidity from '@/components/AddLiquidity';
 
 export default function Home() {
   return (
@@ -13,6 +14,7 @@ export default function Home() {
           <Connection>
             <Balances />
           </Connection>
+          <AddLiquidity />
         </div>
         <Faucet />
 
