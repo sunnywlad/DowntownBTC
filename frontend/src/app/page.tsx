@@ -6,17 +6,17 @@ import Faucet from '@/components/Faucet';
 export default function Home() {
   return (
     <>
-    <Connection>
       <div className='p-4'>
         <p className='text-xl font-bold pb-2'>Welcome to Merion</p>
         <div className='flex gap-4 pb-2'>
           <Reserves />
-          <Balances />
+          <Connection>
+            <Balances />
+          </Connection>
         </div>
         <Faucet />
 
       </div>
-    </Connection>
     </>
   );
 }
