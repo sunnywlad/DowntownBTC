@@ -1,13 +1,12 @@
 import {useWriteContract, useConnection, useWaitForTransactionReceipt} from 'wagmi';
-import {parseUnits} from 'viem';
-import {addresses} from '@/constants/addresses';
+import {parseUnits, Address} from 'viem';
 import {mockWrappedBTCAbi} from '@/constants/abi';
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 const mintedAmount = parseUnits("10", 8);
 
-const MintButton = ({name, address}: {name: string, address: keyof(typeof addresses[31337])}) => {
+const MintButton = ({name, address}: {name: string, address: Address}) => {
   const userAddress = useConnection().address;
   const { mutate, isPending, error, data: hash } = useWriteContract();
   const { isLoading, isSuccess } = useWaitForTransactionReceipt({ hash });
@@ -27,7 +26,7 @@ const MintButton = ({name, address}: {name: string, address: keyof(typeof addres
       onClick={() => {
         if (!userAddress) return;
         mutate({
-        address: addresses[31337][address],
+        address: address,
         abi: mockWrappedBTCAbi,
         functionName: "mint",
         args: [userAddress, mintedAmount]
