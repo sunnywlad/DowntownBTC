@@ -17,3 +17,26 @@ npm-debug.log*
 
 # Tampon de mise en page local
 to paste.txt
+
+# Workbuddy AI cache
+.workbuddy-ai/
+
+# Backend dev scripts (probes, diags, bots, repro)
+backend/scripts/_repro.mjs
+backend/scripts/arb-bot.mjs
+backend/scripts/bot.mjs
+backend/scripts/check-balances.mts
+backend/scripts/diag*.mts
+backend/scripts/inject-multicall3.mts
+backend/scripts/seed-faucet-direct.mts
+backend/scripts/sim-drip.mts
+backend/scripts/tmp-deployless-test*
+
+# Frontend probes
+frontend/probe-*.mjs
+
+# Preview build output
+preview/
+
+# Root-level probes
+probe-*.mjs
