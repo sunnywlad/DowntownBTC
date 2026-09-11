@@ -12,9 +12,11 @@ droit d'arbitrage.
 loyer streamé sur le mandat.
 
 Le mécanisme d'enchère est l'**am-AMM** (Adams & Moallemi, 2024, arXiv 2403.03367),
-déjà livré en production par Bunni v2. Le différenciateur de Merion est le couple
-LBTC + enchère : une enchère sur trois wrappers non-productifs n'aurait rien à
-vendre. C'est la jambe productive qui crée l'objet économique.
+déjà livré en production par Bunni v2 ; l'article fondateur le présente comme un
+levier de liquidité pour le pool. Le différenciateur de Merion n'est pas le choix
+du LBTC en soi, mais l'infrastructure qui permet de l'intégrer : les pools BTC
+existants à trois wrappers (Curve) ne portent que des wrappers statiques comme
+le tBTC, Merion accueille dans le même pool un BTC productif.
 
 Projet de certification **RS6515** (Alyra, développeur blockchain). Version 1,
 déployée sur Base Sepolia, non auditée, non destinée à la production.
